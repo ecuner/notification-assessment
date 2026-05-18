@@ -49,7 +49,7 @@ test('metrics endpoint returns queue depth status rates and latency fields', fun
         'latency_ms' => 300,
     ]);
 
-    $response = $this->getJson('/api/metrics', notificationApiHeaders());
+    $response = $this->getJson('/api/v1/metrics', notificationApiHeaders());
 
     $response
         ->assertOk()
@@ -82,7 +82,7 @@ test('metrics endpoint reflects accepted and failed delivery attempts', function
         'latency_ms' => 250,
     ]);
 
-    $response = $this->getJson('/api/metrics', notificationApiHeaders());
+    $response = $this->getJson('/api/v1/metrics', notificationApiHeaders());
 
     $response
         ->assertOk()
@@ -91,7 +91,7 @@ test('metrics endpoint reflects accepted and failed delivery attempts', function
 });
 
 test('metrics endpoint is unauthorized without api key', function (): void {
-    $this->getJson('/api/metrics')
+    $this->getJson('/api/v1/metrics')
         ->assertUnauthorized()
         ->assertJsonPath('message', 'Unauthenticated.');
 });
@@ -121,7 +121,7 @@ test('metrics endpoint can be scoped by notification id', function (): void {
         'latency_ms' => 350,
     ]);
 
-    $response = $this->getJson("/api/metrics?filter[notification_id]={$target->id}", notificationApiHeaders());
+    $response = $this->getJson("/api/v1/metrics?filter[notification_id]={$target->id}", notificationApiHeaders());
 
     $response
         ->assertOk()
@@ -175,7 +175,7 @@ test('metrics endpoint can be scoped by batch id and correlation id', function (
     ]);
 
     $response = $this->getJson(
-        "/api/metrics?filter[batch_id]={$batch->id}&filter[correlation_id]=batch-scope-correlation",
+        "/api/v1/metrics?filter[batch_id]={$batch->id}&filter[correlation_id]=batch-scope-correlation",
         notificationApiHeaders(),
     );
 

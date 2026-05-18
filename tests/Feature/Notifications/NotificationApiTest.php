@@ -21,7 +21,7 @@ beforeEach(function (): void {
 });
 
 test('a notification can be created', function (): void {
-    $response = $this->postJson('/api/notifications', [
+    $response = $this->postJson('/api/v1/notifications', [
         'recipient' => '+905551234567',
         'channel' => NotificationChannel::Sms->value,
         'content' => 'Your code is 1234.',
@@ -49,7 +49,7 @@ test('a notification can be created', function (): void {
 });
 
 test('notification priority defaults to normal when omitted', function (): void {
-    $response = $this->postJson('/api/notifications', [
+    $response = $this->postJson('/api/v1/notifications', [
         'recipient' => '+905551234567',
         'channel' => NotificationChannel::Sms->value,
         'content' => 'Your code is 1234.',
@@ -66,7 +66,7 @@ test('notification priority defaults to normal when omitted', function (): void 
 });
 
 test('notification creation returns a generated correlation id when header is absent', function (): void {
-    $response = $this->postJson('/api/notifications', [
+    $response = $this->postJson('/api/v1/notifications', [
         'recipient' => '+905551230099',
         'channel' => NotificationChannel::Sms->value,
         'content' => 'Generated correlation id test.',
@@ -86,14 +86,14 @@ test('notification creation returns a generated correlation id when header is ab
 });
 
 test('notification priority controls the delivery queue', function (): void {
-    $normalResponse = $this->postJson('/api/notifications', [
+    $normalResponse = $this->postJson('/api/v1/notifications', [
         'recipient' => 'user@example.com',
         'channel' => NotificationChannel::Email->value,
         'content' => 'Welcome to the campaign.',
         'priority' => NotificationPriority::Normal->value,
     ], notificationApiHeaders());
 
-    $lowResponse = $this->postJson('/api/notifications', [
+    $lowResponse = $this->postJson('/api/v1/notifications', [
         'recipient' => '+905551234568',
         'channel' => NotificationChannel::Push->value,
         'content' => 'Your package is moving.',
@@ -115,10 +115,10 @@ test('repeating the same single-create request with idempotency key returns the 
         'priority' => NotificationPriority::Normal->value,
     ];
 
-    $firstResponse = $this->postJson('/api/notifications', $payload, notificationApiHeaders([
+    $firstResponse = $this->postJson('/api/v1/notifications', $payload, notificationApiHeaders([
         'Idempotency-Key' => 'single-key-1',
     ]));
-    $secondResponse = $this->postJson('/api/notifications', $payload, notificationApiHeaders([
+    $secondResponse = $this->postJson('/api/v1/notifications', $payload, notificationApiHeaders([
         'Idempotency-Key' => 'single-key-1',
     ]));
 
@@ -148,10 +148,10 @@ test('repeating the same batch-create request with idempotency key returns the o
         ],
     ];
 
-    $firstResponse = $this->postJson('/api/notification-batches', $payload, notificationApiHeaders([
+    $firstResponse = $this->postJson('/api/v1/notification-batches', $payload, notificationApiHeaders([
         'Idempotency-Key' => 'batch-key-1',
     ]));
-    $secondResponse = $this->postJson('/api/notification-batches', $payload, notificationApiHeaders([
+    $secondResponse = $this->postJson('/api/v1/notification-batches', $payload, notificationApiHeaders([
         'Idempotency-Key' => 'batch-key-1',
     ]));
 
@@ -178,11 +178,11 @@ test('reusing an idempotency key with a different payload returns conflict', fun
         'priority' => NotificationPriority::Normal->value,
     ];
 
-    $this->postJson('/api/notifications', $firstPayload, notificationApiHeaders([
+    $this->postJson('/api/v1/notifications', $firstPayload, notificationApiHeaders([
         'Idempotency-Key' => 'single-key-conflict',
     ]))->assertAccepted();
 
-    $this->postJson('/api/notifications', $secondPayload, notificationApiHeaders([
+    $this->postJson('/api/v1/notifications', $secondPayload, notificationApiHeaders([
         'Idempotency-Key' => 'single-key-conflict',
     ]))
         ->assertConflict()
@@ -190,7 +190,7 @@ test('reusing an idempotency key with a different payload returns conflict', fun
 });
 
 test('notification creation validates required enum and content limit fields', function (): void {
-    $response = $this->postJson('/api/notifications', [
+    $response = $this->postJson('/api/v1/notifications', [
         'recipient' => '',
         'channel' => 'fax',
         'content' => str_repeat('a', 161),
@@ -201,7 +201,7 @@ test('notification creation validates required enum and content limit fields', f
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['recipient', 'channel', 'priority']);
 
-    $response = $this->postJson('/api/notifications', [
+    $response = $this->postJson('/api/v1/notifications', [
         'recipient' => '+905551234567',
         'channel' => NotificationChannel::Sms->value,
         'content' => str_repeat('a', 161),
@@ -214,7 +214,7 @@ test('notification creation validates required enum and content limit fields', f
 });
 
 test('a notification batch can be created', function (): void {
-    $response = $this->postJson('/api/notification-batches', [
+    $response = $this->postJson('/api/v1/notification-batches', [
         'notifications' => [
             [
                 'recipient' => '+905551234567',
@@ -256,7 +256,7 @@ test('batch creation rejects more than one thousand notifications', function ():
         'priority' => NotificationPriority::Normal->value,
     ];
 
-    $response = $this->postJson('/api/notification-batches', [
+    $response = $this->postJson('/api/v1/notification-batches', [
         'notifications' => array_fill(0, 1001, $item),
     ], notificationApiHeaders());
 
@@ -266,7 +266,7 @@ test('batch creation rejects more than one thousand notifications', function ():
 });
 
 test('api endpoints reject missing api keys', function (): void {
-    $response = $this->postJson('/api/notifications', [
+    $response = $this->postJson('/api/v1/notifications', [
         'recipient' => '+905551234567',
         'channel' => NotificationChannel::Sms->value,
         'content' => 'Hello',
@@ -291,7 +291,7 @@ test('notifications can be listed with filters and pagination', function (): voi
         'created_at' => now(),
     ]);
 
-    $response = $this->getJson('/api/notifications?filter[status]=accepted&filter[channel]=sms&per_page=1', notificationApiHeaders());
+    $response = $this->getJson('/api/v1/notifications?filter[status]=accepted&filter[channel]=sms&per_page=1', notificationApiHeaders());
 
     $response
         ->assertOk()
@@ -322,7 +322,7 @@ test('notifications can be listed with batch and correlation filters', function 
     ]);
 
     $response = $this->getJson(
-        "/api/notifications?filter[batch_id]={$targetBatch->id}&filter[correlation_id]=target-correlation",
+        "/api/v1/notifications?filter[batch_id]={$targetBatch->id}&filter[correlation_id]=target-correlation",
         notificationApiHeaders(),
     );
 
@@ -344,7 +344,7 @@ test('notifications index can include delivery attempts', function (): void {
         'provider_status_code' => 202,
     ]);
 
-    $response = $this->getJson('/api/notifications?include=deliveryAttempts', notificationApiHeaders());
+    $response = $this->getJson('/api/v1/notifications?include=deliveryAttempts', notificationApiHeaders());
 
     $response
         ->assertOk()
@@ -367,7 +367,7 @@ test('notification status can be queried by id', function (): void {
         'correlation_id' => 'status-correlation',
     ]);
 
-    $response = $this->getJson("/api/notifications/{$notification->id}", notificationApiHeaders());
+    $response = $this->getJson("/api/v1/notifications/{$notification->id}", notificationApiHeaders());
 
     $response
         ->assertOk()
@@ -392,7 +392,7 @@ test('batch status can be queried by id', function (): void {
         'status' => NotificationStatus::Accepted,
     ]);
 
-    $response = $this->getJson("/api/notification-batches/{$batch->id}", notificationApiHeaders());
+    $response = $this->getJson("/api/v1/notification-batches/{$batch->id}", notificationApiHeaders());
 
     $response
         ->assertOk()
@@ -403,10 +403,10 @@ test('batch status can be queried by id', function (): void {
 });
 
 test('unknown notification and batch ids return not found', function (): void {
-    $this->getJson('/api/notifications/00000000-0000-0000-0000-000000000000', notificationApiHeaders())
+    $this->getJson('/api/v1/notifications/00000000-0000-0000-0000-000000000000', notificationApiHeaders())
         ->assertNotFound();
 
-    $this->getJson('/api/notification-batches/00000000-0000-0000-0000-000000000000', notificationApiHeaders())
+    $this->getJson('/api/v1/notification-batches/00000000-0000-0000-0000-000000000000', notificationApiHeaders())
         ->assertNotFound();
 });
 
@@ -415,7 +415,7 @@ test('pending notifications can be cancelled', function (): void {
         'status' => NotificationStatus::Pending,
     ]);
 
-    $response = $this->postJson("/api/notifications/{$notification->id}/cancel", [], notificationApiHeaders());
+    $response = $this->postJson("/api/v1/notifications/{$notification->id}/cancel", [], notificationApiHeaders());
 
     $response
         ->assertOk()
@@ -432,7 +432,7 @@ test('accepted notifications cannot be cancelled', function (): void {
         'status' => NotificationStatus::Accepted,
     ]);
 
-    $response = $this->postJson("/api/notifications/{$notification->id}/cancel", [], notificationApiHeaders());
+    $response = $this->postJson("/api/v1/notifications/{$notification->id}/cancel", [], notificationApiHeaders());
 
     $response
         ->assertConflict()
@@ -444,7 +444,7 @@ test('failed notifications cannot be cancelled', function (): void {
         'status' => NotificationStatus::Failed,
     ]);
 
-    $response = $this->postJson("/api/notifications/{$notification->id}/cancel", [], notificationApiHeaders());
+    $response = $this->postJson("/api/v1/notifications/{$notification->id}/cancel", [], notificationApiHeaders());
 
     $response
         ->assertConflict()
@@ -452,7 +452,7 @@ test('failed notifications cannot be cancelled', function (): void {
 });
 
 test('cancelling an unknown notification returns not found', function (): void {
-    $this->postJson('/api/notifications/00000000-0000-0000-0000-000000000000/cancel', [], notificationApiHeaders())
+    $this->postJson('/api/v1/notifications/00000000-0000-0000-0000-000000000000/cancel', [], notificationApiHeaders())
         ->assertNotFound();
 });
 
@@ -463,7 +463,7 @@ test('failed notification can be retriggered', function (): void {
         'provider_status' => 'provider-error',
     ]);
 
-    $response = $this->postJson("/api/notifications/{$notification->id}/retry", [], notificationApiHeaders());
+    $response = $this->postJson("/api/v1/notifications/{$notification->id}/retry", [], notificationApiHeaders());
 
     $response
         ->assertAccepted()
@@ -483,13 +483,13 @@ test('non-failed notification cannot be retriggered', function (): void {
         'status' => NotificationStatus::Accepted,
     ]);
 
-    $this->postJson("/api/notifications/{$notification->id}/retry", [], notificationApiHeaders())
+    $this->postJson("/api/v1/notifications/{$notification->id}/retry", [], notificationApiHeaders())
         ->assertConflict()
         ->assertJsonPath('message', 'Only failed notifications can be retriggered.');
 });
 
 test('unknown notification retrigger returns not found', function (): void {
-    $this->postJson('/api/notifications/00000000-0000-0000-0000-000000000000/retry', [], notificationApiHeaders())
+    $this->postJson('/api/v1/notifications/00000000-0000-0000-0000-000000000000/retry', [], notificationApiHeaders())
         ->assertNotFound();
 });
 
@@ -513,7 +513,7 @@ test('failed notifications in a batch can be retriggered', function (): void {
         'status' => NotificationStatus::Accepted,
     ]);
 
-    $response = $this->postJson("/api/notification-batches/{$batch->id}/retry", [], notificationApiHeaders());
+    $response = $this->postJson("/api/v1/notification-batches/{$batch->id}/retry", [], notificationApiHeaders());
 
     $response->assertAccepted();
 
@@ -545,7 +545,7 @@ test('batch without failed notifications cannot be retriggered', function (): vo
         'status' => NotificationStatus::Accepted,
     ]);
 
-    $this->postJson("/api/notification-batches/{$batch->id}/retry", [], notificationApiHeaders())
+    $this->postJson("/api/v1/notification-batches/{$batch->id}/retry", [], notificationApiHeaders())
         ->assertConflict()
         ->assertJsonPath('message', 'This batch has no failed notifications to retrigger.');
 });

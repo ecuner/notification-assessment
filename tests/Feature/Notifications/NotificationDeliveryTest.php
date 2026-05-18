@@ -29,7 +29,7 @@ test('a cancelled queued notification is not sent by the delivery job', function
         'status' => NotificationStatus::Queued,
     ]);
 
-    $this->postJson("/api/notifications/{$notification->id}/cancel", [], notificationApiHeaders())
+    $this->postJson("/api/v1/notifications/{$notification->id}/cancel", [], notificationApiHeaders())
         ->assertOk();
 
     (new DeliverNotification($notification->id))->handle(app(NotificationDeliveryService::class));
