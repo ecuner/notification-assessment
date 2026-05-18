@@ -15,6 +15,9 @@ class NotificationCreationService
 {
     public function createSingle(array $attributes, ?string $idempotencyKey, string $correlationId): Notification
     {
+        // We're also hashing the payload and keeping it with idempotency keys,
+        // to be able to compare it later(or now) and check if it's "conflict" or really "replay".
+        // Maybe we can allow conflicts in future.
         $operation = 'notification.create';
         $requestHash = $this->hashPayload($operation, $attributes);
 
@@ -38,6 +41,7 @@ class NotificationCreationService
                 'correlation_id' => $correlationId,
             ]);
 
+            // One idempotency truth source for both individual & batch notifications. Less clutter
             $this->storeIdempotencyRecord($idempotencyKey, $operation, $requestHash, [
                 'notification_id' => $notification->id,
                 'response_payload' => [
@@ -65,6 +69,9 @@ class NotificationCreationService
 
     public function createBatch(array $notifications, ?string $idempotencyKey, string $correlationId): NotificationBatch
     {
+        // We're also hashing the payload and keeping it with idempotency keys,
+        // to be able to compare it later(or now) and check if it's "conflict" or really "replay".
+        // Maybe we can allow conflicts in future.
         $operation = 'notification-batch.create';
         $requestHash = $this->hashPayload($operation, $notifications);
 
@@ -97,6 +104,7 @@ class NotificationCreationService
                 ]);
             }
 
+            // One idempotency truth source for both individual & batch notifications. Less clutter
             $this->storeIdempotencyRecord($idempotencyKey, $operation, $requestHash, [
                 'notification_batch_id' => $batch->id,
                 'response_payload' => [
@@ -181,6 +189,7 @@ class NotificationCreationService
         return hash('sha256', json_encode($normalized, JSON_THROW_ON_ERROR));
     }
 
+    // Because when elements' order change, it's still the same payload technically.
     private function sortPayload(array $payload): array
     {
         ksort($payload);

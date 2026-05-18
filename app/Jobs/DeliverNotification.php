@@ -67,6 +67,7 @@ class DeliverNotification implements ShouldQueue
         $attemptNumber = $this->attempts();
         $result = $delivery->deliver($notification);
 
+        // This can be both good & bad, successful ones also fall here
         if (($result['outcome'] ?? null) !== NotificationDeliveryOutcome::Retryable) {
             $notification->refresh();
             $this->logJobEvent('notification.job.finished', $notification, $result['outcome']?->value ?? 'finished');
@@ -92,7 +93,9 @@ class DeliverNotification implements ShouldQueue
             return;
         }
 
+        // Re-schedule. Use Retry-After header value if provided, otherwise we will decide the seconds
         $retryDelay = $result['retry_after'] ?? self::RETRY_BACKOFF_SECONDS[$attemptNumber] ?? 900;
+
         $this->logJobEvent('notification.job.retry_scheduled', $notification, NotificationDeliveryOutcome::Retryable->value, [
             'retry_delay_seconds' => $retryDelay,
         ]);
@@ -123,6 +126,7 @@ class DeliverNotification implements ShouldQueue
                 NotificationStatus::Pending->value,
                 NotificationStatus::Queued->value,
                 NotificationStatus::Processing->value,
+                NotificationStatus::Failed->value,
             ])
             ->count();
 

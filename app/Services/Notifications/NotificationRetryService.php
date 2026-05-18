@@ -10,10 +10,13 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
+// Switches statuses of Notifications to "Queued", then dispatch(es) job(s)
+
 class NotificationRetryService
 {
     public function retryNotification(Notification $notification): bool
     {
+        // Only Failed notifications can be retried
         if ($notification->status !== NotificationStatus::Failed) {
             Log::channel('notification')->warning('notification.retry.skipped', [
                 'notification_id' => $notification->id,
@@ -36,6 +39,7 @@ class NotificationRetryService
                 return;
             }
 
+            // Switch status to "Queued"
             $lockedNotification->update([
                 'status' => NotificationStatus::Queued,
                 'provider_status' => null,
@@ -83,6 +87,7 @@ class NotificationRetryService
                 return;
             }
 
+            // Switch all Notifications to "Queued"
             Notification::query()
                 ->whereIn('id', $failedNotifications->pluck('id'))
                 ->update([
@@ -96,6 +101,7 @@ class NotificationRetryService
                 ->get();
         });
 
+        // Dispatch all of them
         $retriedNotifications->each(fn (Notification $notification) => $this->dispatchDeliveryJob($notification));
         Log::channel('notification')->info('notification.batch_retry.completed', [
             'batch_id' => $batch->id,

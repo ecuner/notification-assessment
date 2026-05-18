@@ -16,6 +16,7 @@ class NotificationDeliveryService
 {
     public function deliver(Notification $notification): array
     {
+        // Makes sure Notification isn't Pending or Queued, then changes status to "Processing"
         $notification = $this->claimForProcessing($notification);
 
         if (! $notification) {
@@ -64,6 +65,7 @@ class NotificationDeliveryService
                     return ['outcome' => NotificationDeliveryOutcome::Skipped, 'retry_after' => null];
                 }
 
+                // Needed for logging & keeping attempt number in DB later down the line
                 $attemptNumber = $this->nextAttemptNumber($lockedNotification);
                 $lockedNotification->deliveryAttempts()->create([
                     'attempt_number' => $attemptNumber,
@@ -88,6 +90,7 @@ class NotificationDeliveryService
 
                     return [
                         'outcome' => NotificationDeliveryOutcome::Retryable,
+                        // Job will respect that
                         'retry_after' => $this->retryAfterDelay($response->header('Retry-After')),
                     ];
                 }
@@ -109,6 +112,7 @@ class NotificationDeliveryService
                     return ['outcome' => NotificationDeliveryOutcome::Skipped, 'retry_after' => null];
                 }
 
+                // Needed for logging & keeping attempt number in DB later down the line
                 $attemptNumber = $this->nextAttemptNumber($lockedNotification);
                 $lockedNotification->deliveryAttempts()->create([
                     'attempt_number' => $attemptNumber,
@@ -136,6 +140,7 @@ class NotificationDeliveryService
                     return ['outcome' => NotificationDeliveryOutcome::Skipped, 'retry_after' => null];
                 }
 
+                // Needed for logging & keeping attempt number in DB later down the line
                 $attemptNumber = $this->nextAttemptNumber($lockedNotification);
                 $lockedNotification->deliveryAttempts()->create([
                     'attempt_number' => $attemptNumber,

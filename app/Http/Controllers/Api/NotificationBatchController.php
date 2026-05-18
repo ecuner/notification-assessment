@@ -21,6 +21,7 @@ class NotificationBatchController extends Controller
         $batch = $notifications->createBatch(
             $request->validated('notifications'),
             $request->header('Idempotency-Key'),
+            // Comes from middleware
             $request->attributes->getString('correlation_id'),
         );
 
@@ -48,6 +49,7 @@ class NotificationBatchController extends Controller
 
     public function show(NotificationBatch $notificationBatch): NotificationBatchResource
     {
+        // Use NotificationController with batch_id filter to see notifications in a batch
         return new NotificationBatchResource($notificationBatch);
     }
 

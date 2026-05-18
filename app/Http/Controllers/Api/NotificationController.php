@@ -48,6 +48,7 @@ class NotificationController extends Controller
         $notification = $notifications->createSingle(
             $request->validated(),
             $request->header('Idempotency-Key'),
+            // Comes from middleware
             $request->attributes->getString('correlation_id'),
         );
 
