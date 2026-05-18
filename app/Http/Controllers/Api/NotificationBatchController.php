@@ -8,12 +8,15 @@ use App\Http\Resources\NotificationBatchResource;
 use App\Models\NotificationBatch;
 use App\Services\Notifications\NotificationCreationService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class NotificationBatchController extends Controller
 {
     public function store(StoreNotificationBatchRequest $request, NotificationCreationService $notifications): JsonResponse
     {
+        $this->logBatchCreationRequest($request, 'notification.batch_creation.request_received');
+
         $batch = $notifications->createBatch(
             $request->validated('notifications'),
             $request->header('Idempotency-Key'),
@@ -23,6 +26,23 @@ class NotificationBatchController extends Controller
         return (new NotificationBatchResource($batch))
             ->response()
             ->setStatusCode(Response::HTTP_ACCEPTED);
+    }
+
+    private function logBatchCreationRequest(StoreNotificationBatchRequest $request, string $event): void
+    {
+        Log::channel('notifications_creation')->info($event, [
+            'correlation_id' => $request->attributes->getString('correlation_id'),
+            'idempotency_key' => $request->header('Idempotency-Key'),
+            'request' => [
+                'method' => $request->method(),
+                'url' => $request->fullUrl(),
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'headers' => $request->headers->all(),
+                'query' => $request->query(),
+                'payload' => $request->all(),
+            ],
+        ]);
     }
 
     public function show(NotificationBatch $notificationBatch): NotificationBatchResource

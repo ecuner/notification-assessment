@@ -9,6 +9,7 @@ use App\Models\Notification;
 use App\Models\NotificationBatch;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class NotificationCreationService
 {
@@ -18,6 +19,15 @@ class NotificationCreationService
         $requestHash = $this->hashPayload($operation, $attributes);
 
         if ($existing = $this->existingIdempotencyRecord($idempotencyKey, $requestHash)) {
+            Log::channel('notifications_creation')->info('notification.creation.idempotent_replay', [
+                'operation' => $operation,
+                'notification_id' => $existing->notification_id,
+                'batch_id' => $existing->notification_batch_id,
+                'idempotency_key' => $idempotencyKey,
+                'request_hash' => $requestHash,
+                'correlation_id' => $correlationId,
+            ]);
+
             return $existing->notification()->firstOrFail();
         }
 
@@ -40,6 +50,15 @@ class NotificationCreationService
         });
 
         $this->dispatchDeliveryJob($notification);
+        Log::channel('notifications_creation')->info('notification.creation.created', [
+            'operation' => $operation,
+            'notification_id' => $notification->id,
+            'batch_id' => $notification->notification_batch_id,
+            'idempotency_key' => $idempotencyKey,
+            'request_hash' => $requestHash,
+            'status' => $notification->status->value,
+            'correlation_id' => $notification->correlation_id,
+        ]);
 
         return $notification;
     }
@@ -50,6 +69,15 @@ class NotificationCreationService
         $requestHash = $this->hashPayload($operation, $notifications);
 
         if ($existing = $this->existingIdempotencyRecord($idempotencyKey, $requestHash)) {
+            Log::channel('notifications_creation')->info('notification.batch_creation.idempotent_replay', [
+                'operation' => $operation,
+                'notification_id' => $existing->notification_id,
+                'batch_id' => $existing->notification_batch_id,
+                'idempotency_key' => $idempotencyKey,
+                'request_hash' => $requestHash,
+                'correlation_id' => $correlationId,
+            ]);
+
             return $existing->batch()->firstOrFail();
         }
 
@@ -82,6 +110,16 @@ class NotificationCreationService
         });
 
         $batch->notifications()->get()->each(fn (Notification $notification) => $this->dispatchDeliveryJob($notification));
+        Log::channel('notifications_creation')->info('notification.batch_creation.created', [
+            'operation' => $operation,
+            'notification_id' => null,
+            'batch_id' => $batch->id,
+            'idempotency_key' => $idempotencyKey,
+            'request_hash' => $requestHash,
+            'status' => $batch->status->value,
+            'total_count' => $batch->total_count,
+            'correlation_id' => $batch->correlation_id,
+        ]);
 
         return $batch;
     }
@@ -99,6 +137,15 @@ class NotificationCreationService
         }
 
         if ($record->request_hash !== $requestHash) {
+            Log::channel('notifications_creation')->warning('notification.creation.idempotency_conflict', [
+                'notification_id' => $record->notification_id,
+                'batch_id' => $record->notification_batch_id,
+                'idempotency_key' => $idempotencyKey,
+                'stored_request_hash' => $record->request_hash,
+                'incoming_request_hash' => $requestHash,
+                'operation' => $record->operation,
+            ]);
+
             throw new HttpResponseException(response()->json([
                 'message' => 'The idempotency key has already been used with a different payload.',
             ], 409));

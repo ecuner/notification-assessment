@@ -73,6 +73,30 @@ return [
             'replace_placeholders' => true,
         ],
 
+        'notifications_creation' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/notifications-creation.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 14),
+            'replace_placeholders' => true,
+        ],
+
+        'notifications_delivery' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/notifications-delivery.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 14),
+            'replace_placeholders' => true,
+        ],
+
+        'notifications_job' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/notifications-job.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 14),
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

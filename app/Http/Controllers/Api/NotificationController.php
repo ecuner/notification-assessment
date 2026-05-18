@@ -11,6 +11,7 @@ use App\Models\Notification;
 use App\Services\Notifications\NotificationCreationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Log;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 use Symfony\Component\HttpFoundation\Response;
@@ -38,6 +39,8 @@ class NotificationController extends Controller
 
     public function store(StoreNotificationRequest $request, NotificationCreationService $notifications): JsonResponse
     {
+        $this->logCreationRequest($request, 'notification.creation.request_received');
+
         $notification = $notifications->createSingle(
             $request->validated(),
             $request->header('Idempotency-Key'),
@@ -47,6 +50,23 @@ class NotificationController extends Controller
         return (new NotificationResource($notification))
             ->response()
             ->setStatusCode(Response::HTTP_ACCEPTED);
+    }
+
+    private function logCreationRequest(StoreNotificationRequest $request, string $event): void
+    {
+        Log::channel('notifications_creation')->info($event, [
+            'correlation_id' => $request->attributes->getString('correlation_id'),
+            'idempotency_key' => $request->header('Idempotency-Key'),
+            'request' => [
+                'method' => $request->method(),
+                'url' => $request->fullUrl(),
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'headers' => $request->headers->all(),
+                'query' => $request->query(),
+                'payload' => $request->all(),
+            ],
+        ]);
     }
 
     public function show(Notification $notification): NotificationResource
