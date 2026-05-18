@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\NotificationDeliveryAttemptFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -38,5 +39,10 @@ class NotificationDeliveryAttempt extends Model
     public function notification(): BelongsTo
     {
         return $this->belongsTo(Notification::class);
+    }
+
+    public function scopeSuccessful(Builder $query): Builder
+    {
+        return $query->where('provider_status_code', 202);
     }
 }
