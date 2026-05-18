@@ -18,4 +18,12 @@ enum NotificationStatus: string
             self::Accepted, self::Failed, self::Cancelled => false,
         };
     }
+
+    public function isConcluded(): bool
+    {
+        return match ($this) {
+            self::Accepted, self::Failed, self::Cancelled => true,
+            self::Pending, self::Queued, self::Processing => false,
+        };
+    }
 }

@@ -3,6 +3,7 @@
 namespace App\Services\Notifications;
 
 use App\Enums\NotificationStatus;
+use App\Jobs\DeliverNotification;
 use App\Models\IdempotencyKey;
 use App\Models\Notification;
 use App\Models\NotificationBatch;
@@ -20,10 +21,10 @@ class NotificationCreationService
             return $existing->notification()->firstOrFail();
         }
 
-        return DB::transaction(function () use ($attributes, $correlationId, $idempotencyKey, $operation, $requestHash): Notification {
+        $notification = DB::transaction(function () use ($attributes, $correlationId, $idempotencyKey, $operation, $requestHash): Notification {
             $notification = Notification::create([
                 ...$attributes,
-                'status' => NotificationStatus::Pending,
+                'status' => NotificationStatus::Queued,
                 'correlation_id' => $correlationId,
             ]);
 
@@ -37,6 +38,10 @@ class NotificationCreationService
 
             return $notification;
         });
+
+        $this->dispatchDeliveryJob($notification);
+
+        return $notification;
     }
 
     public function createBatch(array $notifications, ?string $idempotencyKey, string $correlationId): NotificationBatch
@@ -48,9 +53,9 @@ class NotificationCreationService
             return $existing->batch()->firstOrFail();
         }
 
-        return DB::transaction(function () use ($notifications, $correlationId, $idempotencyKey, $operation, $requestHash): NotificationBatch {
+        $batch = DB::transaction(function () use ($notifications, $correlationId, $idempotencyKey, $operation, $requestHash): NotificationBatch {
             $batch = NotificationBatch::create([
-                'status' => NotificationStatus::Pending,
+                'status' => NotificationStatus::Queued,
                 'total_count' => count($notifications),
                 'correlation_id' => $correlationId,
             ]);
@@ -59,7 +64,7 @@ class NotificationCreationService
                 Notification::create([
                     ...$notification,
                     'notification_batch_id' => $batch->id,
-                    'status' => NotificationStatus::Pending,
+                    'status' => NotificationStatus::Queued,
                     'correlation_id' => $correlationId,
                 ]);
             }
@@ -75,6 +80,10 @@ class NotificationCreationService
 
             return $batch;
         });
+
+        $batch->notifications()->get()->each(fn (Notification $notification) => $this->dispatchDeliveryJob($notification));
+
+        return $batch;
     }
 
     private function existingIdempotencyRecord(?string $idempotencyKey, string $requestHash): ?IdempotencyKey
@@ -136,5 +145,11 @@ class NotificationCreationService
         }
 
         return $payload;
+    }
+
+    private function dispatchDeliveryJob(Notification $notification): void
+    {
+        DeliverNotification::dispatch($notification->id)
+            ->onQueue($notification->priority->queueName());
     }
 }
