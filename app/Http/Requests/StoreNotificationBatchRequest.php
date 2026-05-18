@@ -20,8 +20,24 @@ class StoreNotificationBatchRequest extends FormRequest
         return [
             'notifications' => ['required', 'array', 'min:1', 'max:1000'],
             'notifications.*.recipient' => ['required', 'string', 'max:255'],
+            /**
+             * Notification channel for each batch item.
+             * Allowed values: sms, email, push
+             *
+             * @var string
+             *
+             * @example sms
+             */
             'notifications.*.channel' => ['required', Rule::enum(NotificationChannel::class)],
-            'notifications.*.content' => ['required', 'string', new NotificationContentWithinChannelLimit],
+            'notifications.*.content' => ['required', 'string', 'max:1000', new NotificationContentWithinChannelLimit],
+            /**
+             * Notification priority for each batch item.
+             * Allowed values: high, normal, low
+             *
+             * @var string
+             *
+             * @example normal
+             */
             'notifications.*.priority' => ['sometimes', Rule::enum(NotificationPriority::class)],
         ];
     }

@@ -19,8 +19,24 @@ class StoreNotificationRequest extends FormRequest
     {
         return [
             'recipient' => ['required', 'string', 'max:255'],
+            /**
+             * Notification channel.
+             * Allowed values: sms, email, push
+             *
+             * @var string
+             *
+             * @example sms
+             */
             'channel' => ['required', Rule::enum(NotificationChannel::class)],
-            'content' => ['required', 'string', new NotificationContentWithinChannelLimit],
+            'content' => ['required', 'string', 'max:1000', new NotificationContentWithinChannelLimit],
+            /**
+             * Notification priority.
+             * Allowed values: high, normal, low
+             *
+             * @var string
+             *
+             * @example high
+             */
             'priority' => ['sometimes', Rule::enum(NotificationPriority::class)],
         ];
     }
