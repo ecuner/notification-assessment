@@ -11,5 +11,10 @@ Route::middleware(['correlation.id'])->group(function () {
 
     Route::middleware(['api.key'])->group(function (): void {
         Route::get('metrics', MetricsController::class)->name('api.metrics');
+
+        Route::post('notifications', [NotificationController::class, 'store'])->name('api.notifications.store');
+        Route::get('notifications', [NotificationController::class, 'index'])->name('api.notifications.index');
+        Route::get('notifications/{notification}', [NotificationController::class, 'show'])->name('api.notifications.show');
+        Route::post('notifications/{notification}/cancel', [NotificationController::class, 'cancel'])->name('api.notifications.cancel');
    });
 });

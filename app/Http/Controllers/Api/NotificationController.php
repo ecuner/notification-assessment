@@ -1,0 +1,74 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Enums\NotificationStatus;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\ListNotificationsRequest;
+use App\Http\Requests\StoreNotificationRequest;
+use App\Http\Resources\NotificationResource;
+use App\Models\Notification;
+use App\Services\Notifications\NotificationCreationService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\QueryBuilder;
+use Symfony\Component\HttpFoundation\Response;
+
+class NotificationController extends Controller
+{
+    public function index(ListNotificationsRequest $request): AnonymousResourceCollection
+    {
+        $request->validated();
+
+        $notifications = QueryBuilder::for(Notification::class)
+            ->allowedFilters(
+                AllowedFilter::exact('status'),
+                AllowedFilter::exact('channel'),
+                AllowedFilter::callback('date_from', fn ($query, mixed $value) => $query->where('created_at', '>=', $value)),
+                AllowedFilter::callback('date_to', fn ($query, mixed $value) => $query->where('created_at', '<=', $value)),
+            )
+            ->defaultSort('-created_at')
+            ->allowedSorts('created_at', 'updated_at', 'priority')
+            ->paginate($request->integer('per_page', 15))
+            ->appends($request->query());
+
+        return NotificationResource::collection($notifications);
+    }
+
+    public function store(StoreNotificationRequest $request, NotificationCreationService $notifications): JsonResponse
+    {
+        $notification = $notifications->createSingle(
+            $request->validated(),
+            $request->header('Idempotency-Key'),
+            $request->attributes->getString('correlation_id'),
+        );
+
+        return (new NotificationResource($notification))
+            ->response()
+            ->setStatusCode(Response::HTTP_ACCEPTED);
+    }
+
+    public function show(Notification $notification): NotificationResource
+    {
+        return new NotificationResource($notification->load('deliveryAttempts'));
+    }
+
+    public function cancel(Notification $notification): JsonResponse
+    {
+        if (! $notification->status->canBeCancelled()) {
+            return response()->json([
+                'message' => 'This notification cannot be cancelled.',
+            ], Response::HTTP_CONFLICT);
+        }
+
+        $notification->update([
+            'status' => NotificationStatus::Cancelled,
+            'cancelled_at' => now(),
+        ]);
+
+        return (new NotificationResource($notification->refresh()))
+            ->response()
+            ->setStatusCode(Response::HTTP_OK);
+    }
+}
