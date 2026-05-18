@@ -22,7 +22,7 @@ use Symfony\Component\HttpFoundation\Response;
 class NotificationController extends Controller
 {
     #[HeaderParameter('X-Correlation-ID', 'Correlation ID for tracing & debugging purposes. Random will be assigned if you do not pass any.', type: 'string')]
-    #[HeaderParameter('X-API-Key', 'API key for notification API authentication.', type: 'string', required: true)]
+    #[HeaderParameter('X-API-Key', 'API key for authentication.', type: 'string', required: true)]
     public function index(ListNotificationsRequest $request): AnonymousResourceCollection
     {
         $request->validated();
@@ -46,7 +46,8 @@ class NotificationController extends Controller
     }
 
     #[HeaderParameter('X-Correlation-ID', 'Correlation ID for tracing & debugging purposes. Random will be assigned if you do not pass any.', type: 'string')]
-    #[HeaderParameter('X-API-Key', 'API key for notification API authentication.', type: 'string', required: true)]
+    #[HeaderParameter('X-API-Key', 'API key for authentication.', type: 'string', required: true)]
+    #[HeaderParameter('Idempotency-Key', 'Optional idempotency key for safely retrying create requests without duplicating notifications.', type: 'string')]
     public function store(StoreNotificationRequest $request, NotificationCreationService $notifications): JsonResponse
     {
         $this->logCreationRequest($request, 'notification.creation.request_received');
@@ -81,14 +82,14 @@ class NotificationController extends Controller
     }
 
     #[HeaderParameter('X-Correlation-ID', 'Correlation ID for tracing & debugging purposes. Random will be assigned if you do not pass any.', type: 'string')]
-    #[HeaderParameter('X-API-Key', 'API key for notification API authentication.', type: 'string', required: true)]
+    #[HeaderParameter('X-API-Key', 'API key for authentication.', type: 'string', required: true)]
     public function show(Notification $notification): NotificationResource
     {
         return new NotificationResource($notification->load('deliveryAttempts'));
     }
 
     #[HeaderParameter('X-Correlation-ID', 'Correlation ID for tracing & debugging purposes. Random will be assigned if you do not pass any.', type: 'string')]
-    #[HeaderParameter('X-API-Key', 'API key for notification API authentication.', type: 'string', required: true)]
+    #[HeaderParameter('X-API-Key', 'API key for authentication.', type: 'string', required: true)]
     public function cancel(Notification $notification): JsonResponse
     {
         if (! $notification->status->canBeCancelled()) {
@@ -108,7 +109,7 @@ class NotificationController extends Controller
     }
 
     #[HeaderParameter('X-Correlation-ID', 'Correlation ID for tracing & debugging purposes. Random will be assigned if you do not pass any.', type: 'string')]
-    #[HeaderParameter('X-API-Key', 'API key for notification API authentication.', type: 'string', required: true)]
+    #[HeaderParameter('X-API-Key', 'API key for authentication.', type: 'string', required: true)]
     #[Endpoint(
         title: 'Retry Failed Notification',
         description: 'Retriggers delivery only when the notification is currently in failed status. Returns conflict for non-failed notifications.'

@@ -17,7 +17,8 @@ use Symfony\Component\HttpFoundation\Response;
 class NotificationBatchController extends Controller
 {
     #[HeaderParameter('X-Correlation-ID', 'Correlation ID for tracing & debugging purposes. Random will be assigned if you do not pass any.', type: 'string')]
-    #[HeaderParameter('X-API-Key', 'API key for notification API authentication.', type: 'string', required: true)]
+    #[HeaderParameter('X-API-Key', 'API key for authentication.', type: 'string', required: true)]
+    #[HeaderParameter('Idempotency-Key', 'Optional idempotency key for safely retrying batch create requests without duplicating notifications.', type: 'string')]
     public function store(StoreNotificationBatchRequest $request, NotificationCreationService $notifications): JsonResponse
     {
         $this->logBatchCreationRequest($request, 'notification.batch_creation.request_received');
@@ -52,7 +53,7 @@ class NotificationBatchController extends Controller
     }
 
     #[HeaderParameter('X-Correlation-ID', 'Correlation ID for tracing & debugging purposes. Random will be assigned if you do not pass any.', type: 'string')]
-    #[HeaderParameter('X-API-Key', 'API key for notification API authentication.', type: 'string', required: true)]
+    #[HeaderParameter('X-API-Key', 'API key for authentication.', type: 'string', required: true)]
     public function show(NotificationBatch $notificationBatch): NotificationBatchResource
     {
         // Use NotificationController with batch_id filter to see notifications in a batch
@@ -60,7 +61,7 @@ class NotificationBatchController extends Controller
     }
 
     #[HeaderParameter('X-Correlation-ID', 'Correlation ID for tracing & debugging purposes. Random will be assigned if you do not pass any.', type: 'string')]
-    #[HeaderParameter('X-API-Key', 'API key for notification API authentication.', type: 'string', required: true)]
+    #[HeaderParameter('X-API-Key', 'API key for authentication.', type: 'string', required: true)]
     #[Endpoint(
         title: 'Retry Failed Notifications In Batch',
         description: 'Retriggers only failed notifications within the batch. Returns conflict when the batch has no failed notifications.'
