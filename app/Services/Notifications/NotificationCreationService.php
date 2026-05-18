@@ -5,6 +5,7 @@ namespace App\Services\Notifications;
 use App\Enums\NotificationStatus;
 use App\Models\IdempotencyKey;
 use App\Models\Notification;
+use App\Models\NotificationBatch;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Facades\DB;
 
@@ -35,6 +36,44 @@ class NotificationCreationService
             ]);
 
             return $notification;
+        });
+    }
+
+    public function createBatch(array $notifications, ?string $idempotencyKey, string $correlationId): NotificationBatch
+    {
+        $operation = 'notification-batch.create';
+        $requestHash = $this->hashPayload($operation, $notifications);
+
+        if ($existing = $this->existingIdempotencyRecord($idempotencyKey, $requestHash)) {
+            return $existing->batch()->firstOrFail();
+        }
+
+        return DB::transaction(function () use ($notifications, $correlationId, $idempotencyKey, $operation, $requestHash): NotificationBatch {
+            $batch = NotificationBatch::create([
+                'status' => NotificationStatus::Pending,
+                'total_count' => count($notifications),
+                'correlation_id' => $correlationId,
+            ]);
+
+            foreach ($notifications as $notification) {
+                Notification::create([
+                    ...$notification,
+                    'notification_batch_id' => $batch->id,
+                    'status' => NotificationStatus::Pending,
+                    'correlation_id' => $correlationId,
+                ]);
+            }
+
+            $this->storeIdempotencyRecord($idempotencyKey, $operation, $requestHash, [
+                'notification_batch_id' => $batch->id,
+                'response_payload' => [
+                    'id' => $batch->id,
+                    'status' => $batch->status->value,
+                    'total_count' => $batch->total_count,
+                ],
+            ]);
+
+            return $batch;
         });
     }
 

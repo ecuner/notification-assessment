@@ -16,5 +16,8 @@ Route::middleware(['correlation.id'])->group(function () {
         Route::get('notifications', [NotificationController::class, 'index'])->name('api.notifications.index');
         Route::get('notifications/{notification}', [NotificationController::class, 'show'])->name('api.notifications.show');
         Route::post('notifications/{notification}/cancel', [NotificationController::class, 'cancel'])->name('api.notifications.cancel');
-   });
+
+        Route::post('notification-batches', [NotificationBatchController::class, 'store'])->name('api.notification-batches.store');
+        Route::get('notification-batches/{notificationBatch}', [NotificationBatchController::class, 'show'])->name('api.notification-batches.show');
+    });
 });
