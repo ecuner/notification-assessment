@@ -48,3 +48,8 @@ function something()
 {
     // ..
 }
+
+function notificationApiHeaders(array $headers = []): array
+{
+    return array_merge(['X-API-Key' => 'test-key'], $headers);
+}
