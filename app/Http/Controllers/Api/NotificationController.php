@@ -27,9 +27,12 @@ class NotificationController extends Controller
             ->allowedFilters(
                 AllowedFilter::exact('status'),
                 AllowedFilter::exact('channel'),
+                AllowedFilter::exact('batch_id', 'notification_batch_id'),
+                AllowedFilter::exact('correlation_id'),
                 AllowedFilter::callback('date_from', fn ($query, mixed $value) => $query->where('created_at', '>=', $value)),
                 AllowedFilter::callback('date_to', fn ($query, mixed $value) => $query->where('created_at', '<=', $value)),
             )
+            ->allowedIncludes('deliveryAttempts')
             ->defaultSort('-created_at')
             ->allowedSorts('created_at', 'updated_at', 'priority')
             ->paginate($request->integer('per_page', 15))
