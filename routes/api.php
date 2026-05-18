@@ -9,5 +9,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['correlation.id'])->group(function () {
     Route::get('health', HealthController::class)->name('api.health');
 
-
+    Route::middleware(['api.key'])->group(function (): void {
+        Route::get('metrics', MetricsController::class)->name('api.metrics');
+   });
 });
