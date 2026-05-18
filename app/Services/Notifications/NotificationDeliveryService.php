@@ -11,13 +11,11 @@ class NotificationDeliveryService
 {
     public function deliver(Notification $notification): void
     {
-        $notification->refresh();
+        $notification = $this->claimForProcessing($notification);
 
-        if ($notification->status->isConcluded()) {
+        if (! $notification) {
             return;
         }
-
-        $notification->update(['status' => NotificationStatus::Processing]);
 
         $startedAt = hrtime(true);
 
@@ -52,21 +50,12 @@ class NotificationDeliveryService
             ]);
 
             if ($response->accepted()) {
-                $notification->update([
-                    'status' => NotificationStatus::Accepted,
-                    'provider_message_id' => $providerMessageId,
-                    'provider_status' => $providerStatus ?? NotificationStatus::Accepted->value,
-                    'accepted_at' => now(),
-                ]);
+                $this->markAccepted($notification, $providerMessageId, $providerStatus);
 
                 return;
             }
 
-            $notification->update([
-                'status' => NotificationStatus::Failed,
-                'provider_status' => $providerStatus,
-                'failed_at' => now(),
-            ]);
+            $this->markFailed($notification, $providerStatus);
         } catch (Throwable $exception) {
             $latencyMs = (int) round((hrtime(true) - $startedAt) / 1_000_000);
 
@@ -79,10 +68,46 @@ class NotificationDeliveryService
                 'attempted_at' => now(),
             ]);
 
-            $notification->update([
-                'status' => NotificationStatus::Failed,
+            $this->markFailed($notification);
+        }
+    }
+
+    private function claimForProcessing(Notification $notification): ?Notification
+    {
+        $claimed = Notification::where('id', $notification->id)
+            ->whereIn('status', [
+                NotificationStatus::Pending->value,
+                NotificationStatus::Queued->value,
+            ])
+            ->update(['status' => NotificationStatus::Processing->value]);
+
+        if ($claimed !== 1) {
+            return null;
+        }
+
+        return $notification->refresh();
+    }
+
+    private function markAccepted(Notification $notification, mixed $providerMessageId, mixed $providerStatus): void
+    {
+        Notification::where('id', $notification->id)
+            ->where('status', NotificationStatus::Processing->value)
+            ->update([
+                'status' => NotificationStatus::Accepted->value,
+                'provider_message_id' => $providerMessageId,
+                'provider_status' => $providerStatus ?? NotificationStatus::Accepted->value,
+                'accepted_at' => now(),
+            ]);
+    }
+
+    private function markFailed(Notification $notification, mixed $providerStatus = null): void
+    {
+        Notification::where('id', $notification->id)
+            ->where('status', NotificationStatus::Processing->value)
+            ->update([
+                'status' => NotificationStatus::Failed->value,
+                'provider_status' => $providerStatus,
                 'failed_at' => now(),
             ]);
-        }
     }
 }

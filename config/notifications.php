@@ -6,4 +6,6 @@ return [
     'provider_timeout_seconds' => (int) env('NOTIFICATIONS_PROVIDER_TIMEOUT_SECONDS', 5),
     'rate_limit_per_second' => (int) env('NOTIFICATIONS_RATE_LIMIT_PER_SECOND', 100),
     'rate_limit_release_seconds' => (int) env('NOTIFICATIONS_RATE_LIMIT_RELEASE_SECONDS', 1),
+    'overlap_release_seconds' => (int) env('NOTIFICATIONS_OVERLAP_RELEASE_SECONDS', 1),
+    'overlap_expire_seconds' => (int) env('NOTIFICATIONS_OVERLAP_EXPIRE_SECONDS', 60),
 ];
