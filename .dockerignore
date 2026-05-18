@@ -1,0 +1,47 @@
+# Version control
+.git
+.github
+.circleci
+
+# Dependencies (installed in build stages)
+node_modules
+vendor
+
+# Docker
+docker-compose.yml
+Dockerfile
+
+# Environment
+.env
+.env.testing
+
+# Laravel runtime cache (generated at build/startup)
+bootstrap/cache/*.php
+storage/logs
+storage/app
+storage/framework/cache/data
+storage/framework/sessions
+storage/framework/views
+
+# Frontend build tooling (not needed in PHP container)
+package.json
+package-lock.json
+vite.config.js
+tailwind.config.js
+postcss.config.cjs
+
+# Dev / AI tooling configs
+.vscode
+.agents
+.codex
+.claude
+.mcp.json
+boost.json
+sweep.yaml
+assignment.js
+rector.php
+setup.sh
+
+# Docs
+*.md
+docs

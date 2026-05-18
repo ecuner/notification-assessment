@@ -1,0 +1,39 @@
+#!/usr/bin/env sh
+set -e
+
+container_mode=${CONTAINER_MODE:-"http"}
+running_migrations_and_seeders=${RUNNING_MIGRATIONS_AND_SEEDERS:-"false"}
+
+echo "Container mode: $container_mode"
+
+initialStuff() {
+    rm -f bootstrap/cache/config.php bootstrap/cache/routes*.php bootstrap/cache/events.php; \
+    php artisan storage:link --force; \
+    php artisan event:cache; \
+    php artisan config:cache; \
+    php artisan route:cache;
+
+    if [ ${running_migrations_and_seeders} = "true" ]; then
+        echo "Running migrations and seeding database ..."
+        php artisan migrate --isolated --seed --force;
+    fi
+}
+
+if [ "$1" != "" ]; then
+    exec "$@"
+elif [ ${container_mode} = "http" ]; then
+    initialStuff
+    exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.fpm.conf
+elif [ ${container_mode} = "horizon" ]; then
+    initialStuff
+    exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.horizon.conf
+elif [ ${container_mode} = "scheduler" ]; then
+    initialStuff
+    exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.scheduler.conf
+elif [ ${container_mode} = "worker" ]; then
+    initialStuff
+    exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.worker.conf
+else
+    echo "Container mode mismatched."
+    exit 1
+fi

@@ -25,8 +25,8 @@ return new class extends Migration
             $table->timestamp('attempted_at');
             $table->timestamps();
 
-            $table->unique(['notification_id', 'attempt_number']);
-            $table->index(['provider_status_code', 'attempted_at']);
+            $table->unique(['notification_id', 'attempt_number'], 'notif_delivery_attempt_notif_attempt_unique');
+            $table->index(['provider_status_code', 'attempted_at'], 'notif_delivery_attempt_status_attempted_idx');
         });
     }
 
