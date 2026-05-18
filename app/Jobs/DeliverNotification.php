@@ -58,7 +58,7 @@ class DeliverNotification implements ShouldQueue
 
         RateLimiter::hit($rateLimitKey, 1);
 
-        $attemptNumber = $notification->deliveryAttempts()->count() + 1;
+        $attemptNumber = $this->attempts();
         $result = $delivery->deliver($notification);
 
         if (($result['outcome'] ?? null) !== NotificationDeliveryOutcome::Retryable) {
@@ -73,6 +73,8 @@ class DeliverNotification implements ShouldQueue
                     'failed_at' => now(),
                 ]);
 
+            // We don't fail the Laravel job, because we're using Notification's status & NotificationDeliveryAttempts
+            // to keep track of things. Job states can be messy
             return;
         }
 
