@@ -9,6 +9,7 @@ use App\Http\Requests\StoreNotificationRequest;
 use App\Http\Resources\NotificationResource;
 use App\Models\Notification;
 use App\Services\Notifications\NotificationCreationService;
+use App\Services\Notifications\NotificationRetryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Log;
@@ -90,5 +91,34 @@ class NotificationController extends Controller
         return (new NotificationResource($notification->refresh()))
             ->response()
             ->setStatusCode(Response::HTTP_OK);
+    }
+
+    public function retry(Notification $notification, NotificationRetryService $retry): JsonResponse
+    {
+        Log::channel('notifications_creation')->info('notification.retry.request_received', [
+            'notification_id' => $notification->id,
+            'batch_id' => $notification->notification_batch_id,
+            'correlation_id' => request()->attributes->getString('correlation_id'),
+            'idempotency_key' => request()->header('Idempotency-Key'),
+            'request' => [
+                'method' => request()->method(),
+                'url' => request()->fullUrl(),
+                'ip' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'headers' => request()->headers->all(),
+                'query' => request()->query(),
+                'payload' => request()->all(),
+            ],
+        ]);
+
+        if (! $retry->retryNotification($notification)) {
+            return response()->json([
+                'message' => 'Only failed notifications can be retriggered.',
+            ], Response::HTTP_CONFLICT);
+        }
+
+        return (new NotificationResource($notification->refresh()))
+            ->response()
+            ->setStatusCode(Response::HTTP_ACCEPTED);
     }
 }
