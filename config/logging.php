@@ -73,17 +73,17 @@ return [
             'replace_placeholders' => true,
         ],
 
-        'notifications_creation' => [
+        'api-calls' => [
             'driver' => 'daily',
-            'path' => storage_path('logs/notifications-creation.log'),
+            'path' => storage_path('logs/api-calls.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => env('LOG_DAILY_DAYS', 14),
             'replace_placeholders' => true,
         ],
 
-        'notifications_delivery' => [
+        'notification' => [
             'driver' => 'daily',
-            'path' => storage_path('logs/notifications-delivery.log'),
+            'path' => storage_path('logs/notification.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => env('LOG_DAILY_DAYS', 14),
             'replace_placeholders' => true,

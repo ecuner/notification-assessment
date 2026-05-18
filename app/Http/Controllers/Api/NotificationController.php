@@ -55,7 +55,7 @@ class NotificationController extends Controller
 
     private function logCreationRequest(StoreNotificationRequest $request, string $event): void
     {
-        Log::channel('notifications_creation')->info($event, [
+        Log::channel('api-calls')->info($event, [
             'correlation_id' => $request->attributes->getString('correlation_id'),
             'idempotency_key' => $request->header('Idempotency-Key'),
             'request' => [
@@ -95,7 +95,7 @@ class NotificationController extends Controller
 
     public function retry(Notification $notification, NotificationRetryService $retry): JsonResponse
     {
-        Log::channel('notifications_creation')->info('notification.retry.request_received', [
+        Log::channel('api-calls')->info('notification.retry.request_received', [
             'notification_id' => $notification->id,
             'batch_id' => $notification->notification_batch_id,
             'correlation_id' => request()->attributes->getString('correlation_id'),

@@ -27,7 +27,7 @@ class NotificationDeliveryService
 
         if (! is_string($providerUrl) || $providerUrl === '') {
             $this->markFailed($notification);
-            Log::channel('notifications_delivery')->error('notification.delivery.provider_url_missing', [
+            Log::channel('notification')->error('notification.delivery.provider_url_missing', [
                 'notification_id' => $notification->id,
                 'batch_id' => $notification->notification_batch_id,
                 'correlation_id' => $notification->correlation_id,
@@ -193,7 +193,7 @@ class NotificationDeliveryService
         HttpResponse $response,
         NotificationDeliveryOutcome $outcome,
     ): void {
-        Log::channel('notifications_delivery')->info('notification.delivery.outcome', [
+        Log::channel('notification')->info('notification.delivery.outcome', [
             'notification_id' => $notification->id,
             'batch_id' => $notification->notification_batch_id,
             'attempt_number' => $attemptNumber,
@@ -211,7 +211,7 @@ class NotificationDeliveryService
         Throwable $exception,
         NotificationDeliveryOutcome $outcome,
     ): void {
-        Log::channel('notifications_delivery')->warning('notification.delivery.exception', [
+        Log::channel('notification')->warning('notification.delivery.exception', [
             'notification_id' => $notification->id,
             'batch_id' => $notification->notification_batch_id,
             'attempt_number' => $attemptNumber,

@@ -19,7 +19,7 @@ class NotificationCreationService
         $requestHash = $this->hashPayload($operation, $attributes);
 
         if ($existing = $this->existingIdempotencyRecord($idempotencyKey, $requestHash)) {
-            Log::channel('notifications_creation')->info('notification.creation.idempotent_replay', [
+            Log::channel('notification')->info('notification.creation.idempotent_replay', [
                 'operation' => $operation,
                 'notification_id' => $existing->notification_id,
                 'batch_id' => $existing->notification_batch_id,
@@ -50,7 +50,7 @@ class NotificationCreationService
         });
 
         $this->dispatchDeliveryJob($notification);
-        Log::channel('notifications_creation')->info('notification.creation.created', [
+        Log::channel('notification')->info('notification.creation.created', [
             'operation' => $operation,
             'notification_id' => $notification->id,
             'batch_id' => $notification->notification_batch_id,
@@ -69,7 +69,7 @@ class NotificationCreationService
         $requestHash = $this->hashPayload($operation, $notifications);
 
         if ($existing = $this->existingIdempotencyRecord($idempotencyKey, $requestHash)) {
-            Log::channel('notifications_creation')->info('notification.batch_creation.idempotent_replay', [
+            Log::channel('notification')->info('notification.batch_creation.idempotent_replay', [
                 'operation' => $operation,
                 'notification_id' => $existing->notification_id,
                 'batch_id' => $existing->notification_batch_id,
@@ -110,7 +110,7 @@ class NotificationCreationService
         });
 
         $batch->notifications()->get()->each(fn (Notification $notification) => $this->dispatchDeliveryJob($notification));
-        Log::channel('notifications_creation')->info('notification.batch_creation.created', [
+        Log::channel('notification')->info('notification.batch_creation.created', [
             'operation' => $operation,
             'notification_id' => null,
             'batch_id' => $batch->id,
@@ -137,7 +137,7 @@ class NotificationCreationService
         }
 
         if ($record->request_hash !== $requestHash) {
-            Log::channel('notifications_creation')->warning('notification.creation.idempotency_conflict', [
+            Log::channel('notification')->warning('notification.creation.idempotency_conflict', [
                 'notification_id' => $record->notification_id,
                 'batch_id' => $record->notification_batch_id,
                 'idempotency_key' => $idempotencyKey,

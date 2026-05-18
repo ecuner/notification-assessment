@@ -8,12 +8,21 @@ use App\Models\Notification;
 use App\Models\NotificationBatch;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class NotificationRetryService
 {
     public function retryNotification(Notification $notification): bool
     {
         if ($notification->status !== NotificationStatus::Failed) {
+            Log::channel('notification')->warning('notification.retry.skipped', [
+                'notification_id' => $notification->id,
+                'batch_id' => $notification->notification_batch_id,
+                'correlation_id' => $notification->correlation_id,
+                'status' => $notification->status->value,
+                'reason' => 'not_failed',
+            ]);
+
             return false;
         }
 
@@ -37,10 +46,24 @@ class NotificationRetryService
         $notification->refresh();
 
         if ($notification->status !== NotificationStatus::Queued) {
+            Log::channel('notification')->warning('notification.retry.skipped', [
+                'notification_id' => $notification->id,
+                'batch_id' => $notification->notification_batch_id,
+                'correlation_id' => $notification->correlation_id,
+                'status' => $notification->status->value,
+                'reason' => 'status_not_queued_after_retry',
+            ]);
+
             return false;
         }
 
         $this->dispatchDeliveryJob($notification);
+        Log::channel('notification')->info('notification.retry.completed', [
+            'notification_id' => $notification->id,
+            'batch_id' => $notification->notification_batch_id,
+            'correlation_id' => $notification->correlation_id,
+            'status' => $notification->status->value,
+        ]);
 
         return true;
     }
@@ -74,6 +97,12 @@ class NotificationRetryService
         });
 
         $retriedNotifications->each(fn (Notification $notification) => $this->dispatchDeliveryJob($notification));
+        Log::channel('notification')->info('notification.batch_retry.completed', [
+            'batch_id' => $batch->id,
+            'correlation_id' => $batch->correlation_id,
+            'retried_count' => $retriedNotifications->count(),
+            'retried_notification_ids' => $retriedNotifications->pluck('id')->values()->all(),
+        ]);
 
         return $retriedNotifications;
     }

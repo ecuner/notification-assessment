@@ -31,7 +31,7 @@ class NotificationBatchController extends Controller
 
     private function logBatchCreationRequest(StoreNotificationBatchRequest $request, string $event): void
     {
-        Log::channel('notifications_creation')->info($event, [
+        Log::channel('api-calls')->info($event, [
             'correlation_id' => $request->attributes->getString('correlation_id'),
             'idempotency_key' => $request->header('Idempotency-Key'),
             'request' => [
@@ -53,7 +53,7 @@ class NotificationBatchController extends Controller
 
     public function retry(NotificationBatch $notificationBatch, NotificationRetryService $retry): JsonResponse
     {
-        Log::channel('notifications_creation')->info('notification.batch_retry.request_received', [
+        Log::channel('api-calls')->info('notification.batch_retry.request_received', [
             'notification_id' => null,
             'batch_id' => $notificationBatch->id,
             'correlation_id' => request()->attributes->getString('correlation_id'),
