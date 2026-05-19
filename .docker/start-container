@@ -8,7 +8,14 @@ echo "Container mode: $container_mode"
 
 initialStuff() {
     rm -f bootstrap/cache/config.php bootstrap/cache/routes*.php bootstrap/cache/events.php; \
-    php artisan storage:link --force; \
+    if [ -L public/storage ]; then
+        rm public/storage;
+    fi; \
+    if [ ! -e public/storage ]; then
+        php artisan storage:link;
+    else
+        echo "Skipping storage:link because public/storage already exists and is not a symlink.";
+    fi; \
     php artisan event:cache; \
     php artisan config:cache; \
     php artisan route:cache;
